@@ -1,4 +1,5 @@
 require 'active_support/all'
+require 'pathname'
 require 'fileutils'
 require 'drb'
 
