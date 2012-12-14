@@ -10,7 +10,7 @@ Gem::Specification.new do |gem|
   gem.email         = ["boris@roundlake.ru"]
   gem.description   = %q{Smartguard is the Smartkiosk services control daemon}
   gem.summary       = gem.description
-  gem.homepage      = ""
+  gem.homepage      = "https://github.com/roundlake/smartguard"
 
   gem.files         = `git ls-files`.split($/)
   gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
