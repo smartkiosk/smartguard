@@ -1,0 +1,23 @@
+#!/usr/bin/env ruby
+
+require 'smartguard'
+require 'trollop'
+
+opts = Trollop::options do
+  opt :application, "Application to use", :type => :string
+  opt :path, "Path to application", :type => :string
+  opt :port, "Port to run DRB", :type => :integer, :default => 10000
+end
+
+raise "You should specify application (--application)" if opts[:application].blank?
+raise "You should specify application path (--path)" if opts[:path].blank?
+
+application = Smartguard::Applications.const_get(opts[:application].camelize) rescue nil
+
+raise "Application `#{opts[:application]}` not supported" if application.nil?
+
+application = application.new(opts[:path])
+application.warm_up
+
+DRb.start_service("druby://localhost:#{opts[:port]}", application)
+DRb.thread.join
