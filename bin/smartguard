@@ -1,29 +1,45 @@
 #!/usr/bin/env ruby
 
 require 'smartguard'
-require 'trollop'
+require 'dante'
 
-opts = Trollop::options do
-  opt :application, "Application to use", :type => :string
-  opt :path, "Path to application", :type => :string
-  opt :port, "Port to run DRB", :type => :integer, :default => 10000
-  opt :stop, "Stop all services and exit", :type => :boolean, :default => false
+runner = Dante::Runner.new('smartguard')
+runner.description = "Smartkiosk services control daemon"
+
+runner.with_options do |opts|
+  options[:port] = 10000
+
+  opts.on("-a", "--app APPLICATION", String, "Application to use") do |x|
+    options[:application] = x
+  end
+  opts.on("-x", "--path PATH", String, "Path to application") do |x|
+    options[:path] = x
+  end
+
+  opts.on("-p", "--port PORT", Integer, "Port to run DRB (default: #{options[:port]})") do |x|
+    options[:port] = x
+  end
+
+  opts.on("-S", "--stop", "Stop all services and exit") do |x|
+    options[:stop] = x
+  end
 end
 
-raise "You should specify application (--application)" if opts[:application].blank?
-raise "You should specify application path (--path)" if opts[:path].blank?
+runner.execute do |opts|
+  abort "You should specify application (--app)" if opts[:application].blank?
+  abort "You should specify application path (--path)" if opts[:path].blank?
 
-application = Smartguard::Applications.const_get(opts[:application].camelize) rescue nil
+  application = Smartguard::Applications.const_get(opts[:application].camelize) rescue nil
 
-raise "Application `#{opts[:application]}` not supported" if application.nil?
+  abort "Application `#{opts[:application]}` not supported" if application.nil?
 
-application = application.new(opts[:path])
+  application = application.new(opts[:path])
 
-if opts[:stop]
-  application.stop_services
-else
-  application.warm_up
-
-  DRb.start_service("druby://localhost:#{opts[:port]}", application)
-  DRb.thread.join
+  if opts[:stop]
+    application.stop_services
+  else
+    application.warm_up
+    DRb.start_service("druby://localhost:#{opts[:port]}", application)
+    DRb.thread.join
+  end
 end

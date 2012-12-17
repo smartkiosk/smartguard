@@ -45,7 +45,7 @@ module Smartguard
         start_services(path)
       end
 
-      def restart_asyn(path=nil)
+      def restart_async(path=nil)
         Thread.new{ self.restart(path) }
         true
       end
