@@ -13,12 +13,12 @@ module Smartguard
 
         def start
           Logging.logger.info "Starting thin"
-          run @path, "thin -d -e production start"
+          run @path, "bundle exec thin -d -e production start"
         end
 
         def stop
           Logging.logger.info "Stoping thin"
-          run(@path, "thin -d -e production stop") unless pid.blank?
+          run(@path, "bundle exec thin -d -e production stop") unless pid.blank?
         end
       end
     end
