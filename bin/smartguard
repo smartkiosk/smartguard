@@ -20,6 +20,10 @@ runner.with_options do |opts|
     options[:port] = x
   end
 
+  opts.on("-s", "--start", "Start all services and exit") do |x|
+    options[:start] = x
+  end
+
   opts.on("-S", "--stop", "Stop all services and exit") do |x|
     options[:stop] = x
   end
@@ -37,6 +41,8 @@ runner.execute do |opts|
 
   if opts[:stop]
     application.stop_services
+  elsif opts[:start]
+    application.start_services
   else
     application.warm_up
     DRb.start_service("druby://localhost:#{opts[:port]}", application)
