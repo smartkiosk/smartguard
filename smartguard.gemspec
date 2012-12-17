@@ -18,7 +18,7 @@ Gem::Specification.new do |gem|
   gem.require_paths = ["lib"]
 
   gem.add_runtime_dependency "i18n"
-  gem.add_runtime_dependency "active_support"
+  gem.add_runtime_dependency "activesupport"
   gem.add_runtime_dependency "dante"
 
   gem.add_development_dependency "pry"
