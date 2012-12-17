@@ -19,7 +19,7 @@ module Smartguard
 
         def stop
           Logging.logger.info "Stoping cronic"
-          run @path, "script/cronic -k -P #{@pid_file}"
+          run @path, "script/cronic -k -P #{@pid_file}", 'RAILS_ENV' => 'production'
         end
       end
     end
