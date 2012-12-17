@@ -5,7 +5,13 @@ module Smartguard
     def run(path, command)
       result = false
 
-      Bundler.with_clean_env do
+      if defined?(Bundler)
+        Bundler.with_clean_env do
+          FileUtils.cd(path) do
+            result = Kernel.system command
+          end
+        end
+      else
         FileUtils.cd(path) do
           result = Kernel.system command
         end
