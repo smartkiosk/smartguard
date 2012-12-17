@@ -14,7 +14,7 @@ module Smartguard
 
         def start
           Logging.logger.info "Starting cronic"
-          run @path, "script/cronic -d -l #{@log_file} -P #{@pid_file} RAILS_ENV=production"
+          run @path, "script/cronic -d -l #{@log_file} -P #{@pid_file}", 'RAILS_ENV' => 'production'
         end
 
         def stop
