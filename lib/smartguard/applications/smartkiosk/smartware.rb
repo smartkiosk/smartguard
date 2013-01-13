@@ -6,7 +6,7 @@ module Smartguard
           super
 
           log_file    = @path.join('log/smartware.log')
-          config_file = @path.join('config/smartware.yml')
+          config_file = @path.join('config/services/smartware.yml')
 
           Logging.logger.info "Starting smartware"
           if !run(@path, {}, "bundle", "exec", "smartware", "--log=#{log_file}", "--config-file=#{config_file}")

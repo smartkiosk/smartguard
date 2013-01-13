@@ -7,7 +7,7 @@ module Smartguard
 
           Logging.logger.info "Starting sidekiq"
 
-          config_path = @path.join('config/sidekiq.yml')
+          config_path = @path.join('config/services/sidekiq.yml')
           log_path    = @path.join('log/sidekiq_log')
           pidfile     = @path.join('tmp/pids/sidekiq.pid')
 
