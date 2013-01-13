@@ -74,9 +74,10 @@ module Smartguard
         socket = nil
         thin_alive = false
         begin
-          socket = Socket.new :INET, :STREAM
+          addr = Addrinfo.tcp "localhost", port
+          socket = Socket.new addr.afamily, :STREAM
 
-          socket.connect Socket.sockaddr_in(port, "127.0.0.1")
+          socket.connect addr.to_sockaddr
           thin_alive = true
         rescue
         ensure
