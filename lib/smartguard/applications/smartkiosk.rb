@@ -46,6 +46,11 @@ module Smartguard
         system 'reboot'
       end
 
+      def reboot_async
+        Thread.new{ self.reboot }
+        true
+      end
+
       def switch_release(release)
         if Smartguard.environment != :production
           raise "Release switching is only supported in the production environment."
