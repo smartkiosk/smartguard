@@ -27,12 +27,6 @@ module Smartguard
         data
       end
 
-      def warm_up
-        Logging.logger.info 'Warming up'
-
-        start_services
-      end
-
       def restart(path=nil)
         stop_services(path)
         start_services(path)

@@ -1,15 +1,7 @@
-require "socket"
-
 module Smartguard
   module Applications
     class Smartkiosk
       class Thin < Process
-        def initialize(path)
-          super
-
-          @starting = false
-        end
-
         def start
           super
 

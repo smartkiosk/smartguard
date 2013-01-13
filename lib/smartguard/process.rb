@@ -3,13 +3,17 @@ module Smartguard
     include DRb::DRbUndumped
 
     attr_reader :pid
+    attr_accessor :path
 
-    private
-
-    def initialize
+    def initialize(path)
       @active = false
       @pid = nil
+      @path = path
+      @wanted = false
+      @starting = false
     end
+
+    private
 
     def run_clean(path, env={}, *command)
       raise "process is already active" if @active
@@ -26,12 +30,81 @@ module Smartguard
       end
     end
 
+    public
+
+    def start
+      @wanted = true
+    end
+
+    def stop
+      @wanted = false
+    end
+
+    def active?
+      @active
+    end
+
+    def wanted?
+      @wanted
+    end
+
+    protected
+
+    def died
+      unless @starting
+        Thread.new do
+          Logging.logger.warning "#{self.class.name} died, respawning"
+          start
+        end
+      end
+    end
+
+    def without_respawn(&block)
+      begin
+        @starting = true
+
+        yield
+      ensure
+        @starting = false
+      end
+    end
+
+    def wait_for_port(port)
+      while active?
+        socket = nil
+        thin_alive = false
+        begin
+          socket = Socket.new :INET, :STREAM
+
+          socket.connect Socket.sockaddr_in(port, "127.0.0.1")
+          thin_alive = true
+        rescue
+        ensure
+          socket.close unless socket.nil?
+        end
+
+        break if thin_alive
+        sleep 0.5
+      end
+
+      active?
+    end
+
+    def wait_for_file(file)
+      while active?
+        break if File.exists? file
+        sleep 0.5
+      end
+
+      active?
+    end
+
     def process_died(pid)
       @active = false
       @pid = nil
-    end
 
-    public
+      died if @wanted
+    end
 
     if defined? Bundler
       def run(*args)
@@ -78,10 +151,6 @@ module Smartguard
       end
 
       true
-    end
-
-    def active?
-      @active
     end
   end
 end

@@ -36,7 +36,7 @@ runner.execute do |opts|
   abort "Application `#{opts[:application]}` not supported" if application.nil?
 
   application = application.new(opts[:path])
-  application.warm_up
   DRb.start_service("druby://localhost:#{opts[:port]}", application)
+  application.start_services
   DRb.thread.join
 end

@@ -2,18 +2,14 @@ module Smartguard
   module Applications
     class Smartkiosk
       class Smartware < Process
-        def initialize(path)
-          super
-
-          @log_file    = path.join('log/smartware.log')
-          @config_file = path.join('config/smartware.yml')
-        end
-
         def start
           super
 
+          log_file    = @path.join('log/smartware.log')
+          config_file = @path.join('config/smartware.yml')
+
           Logging.logger.info "Starting smartware"
-          if !run(@path, {}, "bundle", "exec", "smartware", "--log=#{@log_file}", "--config-file=#{@config_file}")
+          if !run(@path, {}, "bundle", "exec", "smartware", "--log=#{log_file}", "--config-file=#{config_file}")
             return false
           end
 
