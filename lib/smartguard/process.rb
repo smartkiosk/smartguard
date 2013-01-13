@@ -40,7 +40,7 @@ module Smartguard
         end
       end
     else
-      alias :run_clean :run
+      alias :run :run_clean
     end
 
     def kill_and_wait(signal = :TERM, timeout = nil)
