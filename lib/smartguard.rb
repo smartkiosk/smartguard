@@ -18,4 +18,7 @@ require 'smartguard/applications/smartkiosk/scheduler'
 require 'smartguard/applications/smartkiosk/thin'
 
 module Smartguard
+  class << self
+    attr_accessor :environment
+  end
 end

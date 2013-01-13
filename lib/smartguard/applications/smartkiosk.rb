@@ -3,7 +3,12 @@ module Smartguard
     class Smartkiosk < Smartguard::Application
       def initialize(*args)
         super
-        @head_path = @base_path.join('head')
+
+        if Smartguard.environment == :production
+          @head_path = @base_path.join('head')
+        else
+          @head_path = @base_path
+        end
 
         @services = {
           smartware: Smartware.new(wrap_path),
@@ -38,6 +43,10 @@ module Smartguard
       end
 
       def switch_release(release)
+        if Smartguard.environment != :production
+          raise "Release switching is only supported in the production environment."
+        end
+
         release = release.is_a?(Symbol) ? @releases_path.join(release.to_s)
                                         : @base_path.join(release)
 

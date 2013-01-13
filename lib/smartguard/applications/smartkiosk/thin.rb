@@ -7,7 +7,11 @@ module Smartguard
 
           Logging.logger.info "Starting thin"
 
-          if !run(@path, {}, "bundle", "exec", "thin", "-e", "production", "start")
+          if !run(@path,
+                  {},
+                  "bundle", "exec",
+                  "thin", "-e", Smartguard.environment.to_s, "start"
+                 )
             return false
           end
 

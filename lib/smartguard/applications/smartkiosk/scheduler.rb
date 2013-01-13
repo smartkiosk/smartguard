@@ -10,7 +10,7 @@ module Smartguard
           Logging.logger.info "Starting scheduler"
 
           run @path, {
-              'RAILS_ENV' => 'production'
+              'RAILS_ENV' => Smartguard.environment.to_s
             }, "rake", "schedule"
         end
 

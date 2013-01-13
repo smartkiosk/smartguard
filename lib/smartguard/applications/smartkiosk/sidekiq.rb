@@ -12,7 +12,11 @@ module Smartguard
           pidfile     = @path.join('tmp/pids/sidekiq.pid')
 
           FileUtils.rm_f pidfile
-          if !run(@path, {}, "bundle", "exec", "sidekiq", "-e", "production", "--config=#{config_path}", "--pidfile=#{pidfile}")
+          if !run(@path,
+                  {},
+                  "bundle", "exec",
+                  "sidekiq", "-e", Smartguard.environment.to_s, "--config=#{config_path}", "--pidfile=#{pidfile}"
+                 )
             return false
           end
 
