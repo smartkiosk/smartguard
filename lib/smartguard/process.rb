@@ -51,11 +51,9 @@ module Smartguard
     protected
 
     def died
-      unless @starting
-        Thread.new do
-          Logging.logger.warning "#{self.class.name} died, respawning"
-          start
-        end
+      Thread.new do
+        Logging.logger.warning "#{self.class.name} died, respawning"
+        start
       end
     end
 
@@ -72,19 +70,22 @@ module Smartguard
     def wait_for_port(port)
       while active?
         socket = nil
-        thin_alive = false
-        begin
-          addr = Addrinfo.tcp "localhost", port
-          socket = Socket.new addr.afamily, :STREAM
+        alive = false
+        Addrinfo.foreach("localhost", port) do |addr|
+          begin
+            socket = Socket.new addr.afamily, :STREAM
 
-          socket.connect addr.to_sockaddr
-          thin_alive = true
-        rescue
-        ensure
-          socket.close unless socket.nil?
+            socket.connect addr.to_sockaddr
+            alive = true
+          rescue
+          ensure
+            socket.close unless socket.nil?
+          end
+
+          break if alive
         end
 
-        break if thin_alive
+        break if alive
         sleep 0.5
       end
 
@@ -104,7 +105,7 @@ module Smartguard
       @active = false
       @pid = nil
 
-      died if @wanted
+      died if @wanted && !@starting
     end
 
     if defined? Bundler
