@@ -1,32 +1,38 @@
+require "fileutils"
+
 module Smartguard
   module Applications
     class Smartkiosk
-      class Sidekiq < Smartguard::Process
+      class Sidekiq < Process
         def initialize(path)
-          @path        = path
+          super
+
           @config_path = path.join('config/sidekiq.yml')
           @log_path    = path.join('log/sidekiq_log')
+          @pidfile     = path.join('tmp/pids/sidekiq.pid')
           @config      = YAML.load_file(@config_path) rescue {}
         end
 
-        def pid
-          File.read(@path.join @config[:pidfile]).to_i rescue nil
-        end
-
         def start
+          super
+
           Logging.logger.info "Starting sidekiq"
 
-          if @config[:pidfile].blank?
-            Logging.logger.warn "Sidekiq's config was not found"
+          FileUtils.rm_f @pidfile
+          if !run(@path, {}, "bundle", "exec", "sidekiq", "-e", "production", "--config=#{@config_path}", "--pidfile=#{@pidfile}")
             return false
           end
 
-          run @path, "bundle exec sidekiq -e production --config #{@config_path} >> #{@log_path} 2>&1 &"
+          without_respawn do
+            wait_for_file @pidfile
+          end
         end
 
         def stop
-          Logging.logger.info "Stoping sidekiq"
-          run @path, "bundle exec sidekiqctl stop #{@config[:pidfile]} 60"
+          super
+
+          Logging.logger.info "Stopping sidekiq"
+          kill_and_wait :TERM, 60
         end
       end
     end

@@ -1,24 +1,34 @@
+require "socket"
+
 module Smartguard
   module Applications
     class Smartkiosk
-      class Thin < Smartguard::Process
+      class Thin < Process
         def initialize(path)
-          @path     = path
-          @pid_file = path.join('tmp/pids/thin.pid')
-        end
+          super
 
-        def pid
-          File.read(@pid_file).to_i rescue nil
+          @starting = false
         end
 
         def start
+          super
+
           Logging.logger.info "Starting thin"
-          run @path, "bundle exec thin -d -e production start"
+
+          if !run(@path, {}, "bundle", "exec", "thin", "-e", "production", "start")
+            return false
+          end
+
+          without_respawn do
+            wait_for_port 3000
+          end
         end
 
         def stop
+          super
+
           Logging.logger.info "Stoping thin"
-          run(@path, "bundle exec thin -d -e production stop") unless pid.blank?
+          kill_and_wait :TERM, 15
         end
       end
     end

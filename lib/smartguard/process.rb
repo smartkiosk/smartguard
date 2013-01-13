@@ -2,34 +2,86 @@ module Smartguard
   class Process
     include DRb::DRbUndumped
 
-    def run(path, command, env={})
-      result = false
+    attr_reader :pid
 
-      if defined?(Bundler)
+    private
+
+    def initialize
+      @active = false
+      @pid = nil
+    end
+
+    def run_clean(path, env={}, *command)
+      raise "process is already active" if @active
+
+      begin
+        @pid = ::Process.spawn env, *command, chdir: path
+        ProcessManager.track @pid, method(:process_died)
+        @active = true
+
+        true
+      rescue => e
+        Logging.logger.error "unable to spawn #{command[0]}: #{e}"
+        false
+      end
+    end
+
+    def process_died(pid)
+      @active = false
+      @pid = nil
+    end
+
+    public
+
+    if defined? Bundler
+      def run(*args)
         Bundler.with_clean_env do
-          env = ENV.to_hash.merge(env)
-
-          FileUtils.cd(path) do
-            result = Kernel.system env, command
-          end
+          run_clean *args
         end
-      else
-        env = ENV.to_hash.merge(env)
+      end
+    else
+      alias :run_clean :run
+    end
 
-        FileUtils.cd(path) do
-          result = Kernel.system env, command
+    def kill_and_wait(signal = :TERM, timeout = nil)
+      kill signal
+      wait timeout
+    end
+
+    def kill(signal = :TERM)
+      if active?
+        ::Process.kill signal, @pid
+      end
+
+      true
+    rescue
+      true
+    end
+
+    def wait(timeout = nil)
+      started = Time.now
+
+      while active?
+        sleep 0.5
+
+        now = Time.now
+        if !timeout.nil? && now - started > timeout
+          begin
+            @active = false
+            ProcessManager.untrack @pid
+            Process.kill :KILL, @pid
+          rescue
+          end
+
+          return true
         end
       end
 
-      result
-    end
-
-    def kill
-      run @path, "kill -9 #{pid}"
+      true
     end
 
     def active?
-      !!::Process.getpgid(pid) rescue false
+      @active
     end
   end
 end

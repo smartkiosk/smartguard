@@ -1,26 +1,32 @@
 module Smartguard
   module Applications
     class Smartkiosk
-      class Smartware < Smartguard::Process
+      class Smartware < Process
         def initialize(path)
-          @path        = path
-          @pid_file    = path.join('tmp/pids/smartware.pid')
+          super
+
           @log_file    = path.join('log/smartware.log')
           @config_file = path.join('config/smartware.yml')
         end
 
-        def pid
-          File.read(@pid_file).to_i rescue nil
-        end
-
         def start
+          super
+
           Logging.logger.info "Starting smartware"
-          run @path, "bundle exec smartware -d --pid=#{@pid_file} --log=#{@log_file} --config-file=#{@config_file}"
+          if !run(@path, {}, "bundle", "exec", "smartware", "--log=#{@log_file}", "--config-file=#{@config_file}")
+            return false
+          end
+
+          without_respawn do
+            wait_for_port 6001
+          end
         end
 
         def stop
+          super
+
           Logging.logger.info "Stoping smartware"
-          kill unless pid.blank?
+          kill_and_wait :TERM, 15
         end
       end
     end

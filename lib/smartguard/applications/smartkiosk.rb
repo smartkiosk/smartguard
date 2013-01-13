@@ -4,19 +4,24 @@ module Smartguard
       def initialize(*args)
         super
         @head_path = @base_path.join('head')
+
+        @services = {
+          smartware: Smartware.new(wrap_path),
+          sidekiq: Sidekiq.new(wrap_path),
+          thin: Thin.new(wrap_path),
+          cronic: Cronic.new(wrap_path),
+        }
       end
 
       def services
-        [:sidekiq, :smartware, :cronic, :thin]
+        @services.keys
       end
 
       def status
         data = {}
 
-        services.each do |s|
-          service = send(s)
-
-          data[s] = [service.pid, service.active?]
+        @services.each do |key, service|
+          data[key] = [ service.pid, service.active? ]
         end
 
         data
@@ -25,19 +30,7 @@ module Smartguard
       def warm_up
         Logging.logger.info 'Warming up'
 
-        services.each do |s|
-          service = send(s)
-
-          if !service.active?
-            if !service.start
-              stop_services
-              puts "Could not be started: #{s}"
-              exit
-            end
-          else
-            Logging.logger.info "#{s} is already active: #{service.pid}"
-          end
-        end
+        start_services
       end
 
       def restart(path=nil)
@@ -91,40 +84,30 @@ module Smartguard
       end
 
       def start_services(path=nil, &block)
-        services.each do |s|
-          if !send(s, path).start && block_given?
-            Logging.logger.debug "Startup of #{s} failed: running safety block"
-            yield 
-            return false
+        @services.each do |key, service|
+          service.path = wrap_path path
+
+          if !service.active?
+            if !service.start && block_given?
+              Logging.logger.debug "Startup of #{s} failed: running safety block"
+              yield
+              return false
+            end
           end
         end
       end
 
       def stop_services(path=nil)
-        services.each do |s|
-          send(s, path).stop
+        @services.each do |key, service|
+          service.path = wrap_path path
+
+          service.stop if service.active?
         end
       end
 
     protected
 
-      def sidekiq(path=nil)
-        Sidekiq.new wrap_path(path)
-      end
-
-      def smartware(path=nil)
-        Smartware.new wrap_path(path)
-      end
-
-      def cronic(path=nil)
-        Cronic.new wrap_path(path)
-      end
-
-      def thin(path=nil)
-        Thin.new wrap_path(path)
-      end
-
-      def wrap_path(path)
+      def wrap_path(path = nil)
         path.blank? ? @current_path : Pathname.new(path)
       end
     end
