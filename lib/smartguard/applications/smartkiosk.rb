@@ -9,7 +9,7 @@ module Smartguard
           smartware: Smartware.new(wrap_path),
           sidekiq: Sidekiq.new(wrap_path),
           thin: Thin.new(wrap_path),
-          cronic: Cronic.new(wrap_path),
+          scheduler: Scheduler.new(wrap_path),
         }
       end
 
