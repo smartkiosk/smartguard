@@ -78,6 +78,12 @@ module Smartguard
           if !system("bundle", "exec", "rake", "assets:precompile", "--trace", "RAILS_ENV=production")
             raise "asset precompilation failed"
           end
+
+          Logging.logger.info "Symlinking"
+          FileUtils.rm_rf "config/services"
+          FileUtils.rm_rf "public/uploads"
+          FileUtils.ln_s "#{@shared_path.join 'config'}", "config/services"
+          FileUtils.ln_s "#{@shared_path.join 'uploads'}", "public/uploads"
         end
 
         self.stop_services
