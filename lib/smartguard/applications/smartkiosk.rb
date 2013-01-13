@@ -42,6 +42,10 @@ module Smartguard
         true
       end
 
+      def reboot
+        system 'reboot'
+      end
+
       def switch_release(release)
         if Smartguard.environment != :production
           raise "Release switching is only supported in the production environment."
