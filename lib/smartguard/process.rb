@@ -52,7 +52,7 @@ module Smartguard
 
     def died
       Thread.new do
-        Logging.logger.warning "#{self.class.name} died, respawning"
+        Logging.logger.warn "#{self.class.name} died, respawning"
         start
       end
     end
