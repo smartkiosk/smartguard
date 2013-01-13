@@ -61,15 +61,23 @@ module Smartguard
 
         raise "Release doesn't exist: #{release.to_s}" unless File.exist? release
 
+        FileUtils.mkdir_p "#{release}/tmp/pids"
+
         FileUtils.cd(release) do
           Logging.logger.info "Installing release gems"
-          `bundle install`
+          if !system("bundle", "install", "--local")
+            raise "bundle failed"
+          end
 
           Logging.logger.info "Migrating database"
-          `bundle exec rake db:migrate --trace  RAILS_ENV=production`
+          if !system("bundle", "exec", "rake", "db:migrate", "--trace", "RAILS_ENV=production")
+            raise "migration failed"
+          end
 
           Logging.logger.info "Compiling assets"
-          `bundle exec rake assets:precompile --trace RAILS_ENV=production`
+          if !system("bundle", "exec", "rake", "assets:precompile", "--trace", "RAILS_ENV=production")
+            raise "asset precompilation failed"
+          end
         end
 
         self.stop_services
