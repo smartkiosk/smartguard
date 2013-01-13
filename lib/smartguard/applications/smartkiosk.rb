@@ -84,6 +84,9 @@ module Smartguard
           FileUtils.rm_rf "public/uploads"
           FileUtils.ln_s "#{@shared_path.join 'config'}", "config/services"
           FileUtils.ln_s "#{@shared_path.join 'uploads'}", "public/uploads"
+
+          FileUtils.rm "config/database.yml"
+          FileUtils.ln_s "config/services/database.yml", "config/database.yml"
         end
 
         self.stop_services
