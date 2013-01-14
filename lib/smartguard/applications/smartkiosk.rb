@@ -89,7 +89,11 @@ module Smartguard
           end
         end
 
-        yield if block_given?
+        begin
+         yield if block_given?
+        rescue Exception => e
+          Logging.logger.warn "Switch handler failed: #{e}"
+        end
 
         self.stop_services
 
