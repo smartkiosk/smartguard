@@ -8,8 +8,13 @@ module Smartguard
           log_file    = @path.join('log/smartware.log')
           config_file = @path.join('config/services/smartware.yml')
 
+          opts = []
+          if Smartguard.environment == :production
+            opts << "--log=#{log_file}"
+          end
+
           Logging.logger.info "Starting smartware"
-          if !run(@path, {}, "bundle", "exec", "smartware", "--log=#{log_file}", "--config-file=#{config_file}")
+          if !run(@path, {}, "bundle", "exec", "smartware", "--config-file=#{config_file}", *opts)
             return false
           end
 

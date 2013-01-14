@@ -11,11 +11,17 @@ module Smartguard
           log_path    = @path.join('log/sidekiq_log')
           pidfile     = @path.join('tmp/pids/sidekiq.pid')
 
+          opts = []
+          if Smartguard.environment == :production
+            opts << "-L"
+            opts << "#{log_path}"
+          end
+
           FileUtils.rm_f pidfile
           if !run(@path,
                   {},
                   "bundle", "exec",
-                  "sidekiq", "-e", Smartguard.environment.to_s, "--config=#{config_path}", "--pidfile=#{pidfile}"
+                  "sidekiq", "-e", Smartguard.environment.to_s, "--config=#{config_path}", "--pidfile=#{pidfile}", *opts
                  )
             return false
           end
