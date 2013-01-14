@@ -92,7 +92,7 @@ end
 opts = Trollop.options do
   version "Smartguard #{Smartguard::VERSION}"
 
-  opt :app, "Application to use", type: String, required: true
+  opt :app, "Application to use", type: String
   opt :path, "Path to application", type: String
   opt :port, "Port to run DRB", default: 10000
   opt :pid, "Pid file name", type: String
@@ -109,9 +109,9 @@ if opts[:kill]
   begin
     pid = File.read(opts[:pid]).to_i
 
-    Process.kill :TERM, opts[:pid]
+    Process.kill :TERM, pid
     loop do
-      Process.kill 0, opts[:pid]
+      Process.kill 0, pid
       sleep 0.5
     end
   rescue
@@ -119,6 +119,8 @@ if opts[:kill]
 
   exit 0
 end
+
+Trollop::die :app, "must be specified" if opts[:app].nil?
 
 begin
   application = Smartguard::Applications.const_get opts[:app].camelize

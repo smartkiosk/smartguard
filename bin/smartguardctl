@@ -1,0 +1,70 @@
+#!/usr/bin/env ruby
+
+require "trollop"
+require "smartguard"
+
+module CommandHandler
+  def self.cmd_start(drb)
+    status = drb.start_services
+  end
+
+  def self.cmd_stop(drb)
+    drb.stop_services
+  end
+
+  def self.cmd_restart(drb)
+    drb.restart
+  end
+
+  def self.cmd_status(drb)
+    status = drb.status
+
+    status.each do |service, (pid, active)|
+      printf "%-16s: ", service
+
+      if active
+        puts "running, pid #{pid}"
+      else
+        puts "stopped"
+      end
+    end
+  end
+
+  def self.cmd_switch_release(drb)
+    if ARGV.empty?
+      warn "release must be specified"
+      exit 1
+    end
+
+    release = ARGV.shift
+    status = drb.switch_release release
+    if status
+      puts "releases switched"
+    else
+      warn "switch failed"
+      exit 1
+    end
+  end
+end
+
+opts = Trollop.options do
+  version "Smartguard CLI #{Smartguard::VERSION}"
+  opt :port, "DRB Port", default: 10000
+  stop_on_unknown
+end
+
+drb = DRb::DRbObject.new_with_uri "druby://localhost:#{opts[:port]}"
+
+if ARGV.empty?
+  warn "command must be specified"
+  exit 1
+end
+
+cmd = :"cmd_#{ARGV.shift}"
+
+unless CommandHandler.respond_to? cmd
+  warn "unsupported command"
+  exit 1
+end
+
+CommandHandler.send cmd, drb
