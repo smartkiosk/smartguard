@@ -64,6 +64,15 @@ module Smartguard
         FileUtils.mkdir_p "#{release}/tmp/pids"
 
         FileUtils.cd(release) do
+          Logging.logger.info "Symlinking"
+          FileUtils.rm_rf "config/services"
+          FileUtils.rm_rf "public/uploads"
+          FileUtils.ln_s "#{@shared_path.join 'config'}", "config/services"
+          FileUtils.ln_s "#{@shared_path.join 'uploads'}", "public/uploads"
+
+          FileUtils.rm_f "config/database.yml"
+          FileUtils.ln_s "services/database.yml", "config/database.yml"
+
           Logging.logger.info "Installing release gems"
           if !system("bundle", "install", "--local")
             raise "bundle failed"
@@ -78,15 +87,6 @@ module Smartguard
           if !system("bundle", "exec", "rake", "assets:precompile", "--trace", "RAILS_ENV=production")
             raise "asset precompilation failed"
           end
-
-          Logging.logger.info "Symlinking"
-          FileUtils.rm_rf "config/services"
-          FileUtils.rm_rf "public/uploads"
-          FileUtils.ln_s "#{@shared_path.join 'config'}", "config/services"
-          FileUtils.ln_s "#{@shared_path.join 'uploads'}", "public/uploads"
-
-          FileUtils.rm "config/database.yml"
-          FileUtils.ln_s "services/database.yml", "config/database.yml"
         end
 
         self.stop_services
