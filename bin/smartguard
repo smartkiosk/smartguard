@@ -25,7 +25,7 @@ def start_application(application, opts, &block)
       if Smartguard.shutting_down
         Smartguard::Logging.logger.info "Okay, okay."
       else
-        Smartguard::Logging.logger.info "Catched signal, shutting down"
+        Smartguard::Logging.logger.info "Catched signal #{signal}, shutting down"
 
         Smartguard.shutting_down = true
         Smartguard::Logging.logger.info "Stopping services"
@@ -43,7 +43,7 @@ def start_application(application, opts, &block)
   trap :HUP, signal_handler
   trap :INT, signal_handler
   trap :QUIT, signal_handler
-  trap :PIPE, signal_handler
+  trap :PIPE, "IGNORE"
   trap :TERM, signal_handler
   Smartguard::ProcessManager.init
 
