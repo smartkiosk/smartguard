@@ -14,7 +14,7 @@ module Smartguard
           end
 
           Logging.logger.info "Starting smartware"
-          if !run(@path, {}, "bundle", "exec", "smartware", "--config-file=#{config_file}", *opts)
+          if !run(@path, {}, "bundle", "exec", "smartware", "--config=#{config_file}", *opts)
             return false
           end
 

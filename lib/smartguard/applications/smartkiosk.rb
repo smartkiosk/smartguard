@@ -118,7 +118,7 @@ module Smartguard
 
           if !service.active?
             if !service.start && block_given?
-              Logging.logger.debug "Startup of #{s} failed: running safety block"
+              Logging.logger.debug "Startup of #{key} failed: running safety block"
               yield
               return false
             end

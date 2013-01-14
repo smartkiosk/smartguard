@@ -65,6 +65,10 @@ def start_application(application, opts, &block)
     end
   rescue => e
     Smartguard::Logging.logger.error "Exception catched during service startup: #{e}"
+    e.backtrace.each do |line|
+      Smartguard::Logging.logger.error line
+    end
+
     exit 1
   end
 
