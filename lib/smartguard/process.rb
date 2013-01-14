@@ -105,7 +105,7 @@ module Smartguard
       @active = false
       @pid = nil
 
-      died if @wanted && !@starting
+      died if @wanted && !@starting && !Smartguard.shutting_down
     end
 
     if defined? Bundler

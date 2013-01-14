@@ -20,7 +20,7 @@ Gem::Specification.new do |gem|
   gem.add_dependency 'smartkiosk-common'
   gem.add_dependency 'i18n'
   gem.add_dependency 'activesupport'
-  gem.add_dependency 'dante'
+  gem.add_dependency 'trollop'
   gem.add_dependency 'colored'
 
   gem.add_development_dependency 'pry'

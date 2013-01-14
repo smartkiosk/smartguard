@@ -33,7 +33,8 @@ module Smartguard
       end
     end
 
+    def self.init
+      trap :CHLD, ProcessManager.method(:handle_sigchld)
+    end
   end
-
-  trap 'CHLD', ProcessManager.method(:handle_sigchld)
 end

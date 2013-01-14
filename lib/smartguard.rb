@@ -22,5 +22,8 @@ require 'smartguard/applications/smartkiosk/thin'
 module Smartguard
   class << self
     attr_accessor :environment
+    attr_accessor :shutting_down
   end
+
+  self.shutting_down = false
 end

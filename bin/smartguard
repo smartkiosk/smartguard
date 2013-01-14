@@ -1,63 +1,194 @@
 #!/usr/bin/env ruby
 
 require 'smartguard'
+require 'trollop'
 require 'colored'
-require 'dante'
 
-Smartkiosk::Common::Patches.dante_should_log_with Smartguard::Logging.logger
+def start_application(application, opts, &block)
 
-runner = Dante::Runner.new('smartguard')
-runner.description = "Smartkiosk services control daemon"
+  Smartguard::Logging.logger.info "Starting application"
 
-runner.with_options do |opts|
-  options[:port] = 10000
-  options[:development] = false
-
-  opts.on("-a", "--app APPLICATION", String, "Application to use") do |x|
-    options[:application] = x
-  end
-  opts.on("-x", "--path PATH", String, "Path to application") do |x|
-    options[:path] = x
-  end
-
-  opts.on("-p", "--port PORT", Integer, "Port to run DRB (default: #{options[:port]})") do |x|
-    options[:port] = x
-  end
-
-  opts.on("-v", "--version", "Output version") do |x|
-    options[:version] = x
-  end
-
-  opts.on("-d", "--development", "Run in development environment") do |x|
-    options[:development] = x
-  end
-end
-
-runner.execute do |opts|
-  abort "Smartguard version: #{Smartguard::VERSION}" if opts[:version]
-
-  abort "You should specify application (--app)" if opts[:application].blank?
-
-  if opts[:path].blank?
-    if opts[:development]
-      opts[:path] = Dir.getwd
-    else
-      abort "You should specify application path (--path)" if opts[:path].blank?
+  unless opts[:pid].nil?
+    begin
+      File.open(opts[:pid], "w") do |io|
+        io.write Process.pid.to_s
+      end
+    rescue => e
+      Smartguard::Logging.logger.error "Unable to write pidfile: #{e}"
     end
   end
 
-  application = Smartguard::Applications.const_get(opts[:application].camelize) rescue nil
+  application = application.new opts[:path]
 
-  abort "Application `#{opts[:application]}` not supported" if application.nil?
+  signal_handler = ->(signal) do
+    begin
+      if Smartguard.shutting_down
+        Smartguard::Logging.logger.info "Okay, okay."
+      else
+        Smartguard::Logging.logger.info "Catched signal, shutting down"
 
-  if opts[:development]
-    Smartguard.environment = :development
-  else
-    Smartguard.environment = :production
+        Smartguard.shutting_down = true
+        Smartguard::Logging.logger.info "Stopping services"
+        application.stop_services
+      end
+
+    rescue => e
+      Smartguard::Logging.logger.error "Shutdown failed: #{e}"
+
+    ensure
+      exit 1
+    end
   end
 
-  application = application.new(opts[:path])
+  trap :HUP, signal_handler
+  trap :INT, signal_handler
+  trap :QUIT, signal_handler
+  trap :PIPE, signal_handler
+  trap :TERM, signal_handler
+  Smartguard::ProcessManager.init
+
+  at_exit do
+    begin
+      Smartguard::Logging.logger.info "Killing any remaining processes"
+    ensure
+      Process.kill :KILL, 0
+    end
+  end
+
+  Smartguard::Logging.logger.info "Starting services"
+
+  begin
+    application.start_services do
+      Smartguard::Logging.logger.error "Startup failed, cleaning up and exiting"
+      application.stop_services
+      exit 1
+    end
+  rescue => e
+    Smartguard::Logging.logger.error "Exception catched during service startup: #{e}"
+    exit 1
+  end
+
+  Smartguard::Logging.logger.info "Services started"
+
   DRb.start_service("druby://localhost:#{opts[:port]}", application)
-  application.start_services
+  Smartguard::Logging.logger.info "Smartguard ready"
+
+  yield if block_given?
+
   DRb.thread.join
+end
+
+trap :TTIN do
+  Thread.list.each do |thread|
+    puts "Thread #{thread}:"
+    if thread.backtrace
+      puts thread.backtrace.join("\n")
+    else
+      puts "<no backtrace available>"
+    end
+  end
+end
+
+opts = Trollop.options do
+  version "Smartguard #{Smartguard::VERSION}"
+
+  opt :app, "Application to use", type: String, required: true
+  opt :path, "Path to application", type: String
+  opt :port, "Port to run DRB", default: 10000
+  opt :pid, "Pid file name", type: String
+  opt :log, "Log file name", type: String
+  opt :development, "Run in the development environment"
+  opt :daemon, "Daemonize Smartguard after initialization"
+  opt :kill, "Kill Smartguard by pidfile"
+end
+
+if opts[:kill]
+  Trollop::die :pid, "must be specified to kill" if opts[:pid].nil?
+
+  puts "Waiting for Smartguard to die."
+  begin
+    pid = File.read(opts[:pid]).to_i
+
+    Process.kill :TERM, opts[:pid]
+    loop do
+      Process.kill 0, opts[:pid]
+      sleep 0.5
+    end
+  rescue
+  end
+
+  exit 0
+end
+
+begin
+  application = Smartguard::Applications.const_get opts[:app].camelize
+rescue
+  Trollop::die :app, "is not supported"
+end
+
+if opts[:path].nil?
+  if opts[:development]
+    opts[:path] = Dir.getwd
+  else
+    Trollop::die :path, "must be specified in production"
+  end
+end
+
+if opts[:development]
+  Smartguard.environment = :development
+else
+  Smartguard.environment = :production
+end
+
+if opts[:log].nil?
+  Trollop::die :log, "must be specified for daemon" if opts[:daemon]
+else
+  Smartguard::Logging.destination = opts[:log]
+end
+
+Smartguard::Logging.init
+Smartguard::Logging.logger.info "Initializing Smartguard"
+
+if opts[:daemon]
+  rd, wr = IO.pipe
+
+  pid = Process.fork
+  if pid.nil?
+    begin
+      Process.setsid
+      Dir.chdir '/'
+      File.umask 0
+      File.open("/dev/null", "r+") do |null|
+        [ STDIN, STDOUT, STDERR ].each do |io|
+          io.reopen null
+        end
+      end
+
+      rd.close
+
+      start_application(application, opts) do
+        wr.puts "1"
+        wr.flush
+        wr.close
+      end
+
+      exit 0
+    rescue
+      exit 1
+    end
+  end
+
+  wr.close
+
+  begin
+    rd.readline
+
+    puts "smartguard started"
+    exit 0
+  rescue => e
+    puts "smartguard initialization failed"
+    exit 1
+  end
+else
+  start_application application, opts
 end

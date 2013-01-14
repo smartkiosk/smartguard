@@ -12,18 +12,22 @@ module Smartguard
             Logging.logger.info "Starting thin"
           end
 
+          log_path = @path.join('log/thin.log')
+
           if !run(@path,
                   {},
                   "bundle", "exec",
-                  "thin", "-e", Smartguard.environment.to_s, "-p", 3000,
+                  "thin", "-e", Smartguard.environment.to_s, "-p", "3000", "-l", "#{log_path}",
                   "start"
                  )
             return false
           end
 
-          without_respawn do
-            wait_for_port port
+          result = without_respawn do
+            wait_for_port 3000
           end
+
+          result
         end
 
         def stop
