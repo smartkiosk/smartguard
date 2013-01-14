@@ -89,6 +89,8 @@ module Smartguard
           end
         end
 
+        yield if block_given?
+
         self.stop_services
 
         Logging.logger.info "Switching symlink from `#{@active_path}` to `#{release}`"
