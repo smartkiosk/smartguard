@@ -17,9 +17,11 @@ Gem::Specification.new do |gem|
   gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})
   gem.require_paths = ["lib"]
 
-  gem.add_runtime_dependency "i18n"
-  gem.add_runtime_dependency "activesupport"
-  gem.add_runtime_dependency "dante"
+  gem.add_dependency 'smartkiosk-common'
+  gem.add_dependency 'i18n'
+  gem.add_dependency 'activesupport'
+  gem.add_dependency 'dante'
+  gem.add_dependency 'colored'
 
-  gem.add_development_dependency "pry"
+  gem.add_development_dependency 'pry'
 end

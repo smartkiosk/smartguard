@@ -2,7 +2,9 @@ require 'active_support/all'
 require 'pathname'
 require 'fileutils'
 require 'drb'
-require "socket"
+require 'socket'
+
+require 'smartkiosk/common'
 
 require 'smartguard/version'
 require 'smartguard/logging'

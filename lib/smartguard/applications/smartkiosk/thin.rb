@@ -5,18 +5,17 @@ module Smartguard
         def start
           super
 
-          Logging.logger.info "Starting thin"
-
           if Smartguard.environment == :development
-            port = 3001
+            Logging.logger.info "Skipping thin; Please run manually".black_on_white.bold
+            return true
           else
-            port = 3000
+            Logging.logger.info "Starting thin"
           end
 
           if !run(@path,
                   {},
                   "bundle", "exec",
-                  "thin", "-e", Smartguard.environment.to_s, "-p", port.to_s,
+                  "thin", "-e", Smartguard.environment.to_s, "-p", 3000,
                   "start"
                  )
             return false

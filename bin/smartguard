@@ -1,7 +1,10 @@
 #!/usr/bin/env ruby
 
 require 'smartguard'
+require 'colored'
 require 'dante'
+
+Smartkiosk::Common::Patches.dante_should_log_with Smartguard::Logging.logger
 
 runner = Dante::Runner.new('smartguard')
 runner.description = "Smartkiosk services control daemon"
