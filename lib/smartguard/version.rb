@@ -1,3 +1,3 @@
 module Smartguard
-  VERSION = "0.2.11"
+  VERSION = "0.3"
 end
