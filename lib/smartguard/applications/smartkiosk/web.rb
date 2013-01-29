@@ -14,11 +14,16 @@ module Smartguard
 
           log_path = @path.join('log/web.log')
 
+          opts = []
+          if Smartguard.environment == :production
+            opts << "--log=#{log_path}"
+          end
+
           if !run(@path, {
                   'RACK_ENV' => Smartguard.environment.to_s
                 },
                   "bundle", "exec",
-                  "rack", "web"
+                  "smartkiosk-client", "web", *opts
                  )
             return false
           end
