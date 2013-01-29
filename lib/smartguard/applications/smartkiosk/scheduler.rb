@@ -11,7 +11,7 @@ module Smartguard
 
           run @path, {
               'RACK_ENV' => Smartguard.environment.to_s
-            }, "rake", "schedule"
+            }, "bundle", "exec", "rake", "schedule"
         end
 
         def stop
