@@ -13,7 +13,7 @@ module Smartguard
         @services = {
           smartware: Smartware.new(wrap_path),
           sidekiq: Sidekiq.new(wrap_path),
-          thin: Thin.new(wrap_path),
+          web: Web.new(wrap_path),
           scheduler: Scheduler.new(wrap_path),
         }
       end
@@ -79,13 +79,8 @@ module Smartguard
           end
 
           Logging.logger.info "Migrating database"
-          if !system("bundle", "exec", "rake", "db:migrate", "--trace", "RAILS_ENV=production")
+          if !system("bundle", "exec", "rake", "db:migrate", "--trace", "RACK_ENV=production")
             raise "migration failed"
-          end
-
-          Logging.logger.info "Compiling assets"
-          if !system("bundle", "exec", "rake", "assets:precompile", "--trace", "RAILS_ENV=production")
-            raise "asset precompilation failed"
           end
         end
 

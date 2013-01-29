@@ -6,25 +6,25 @@ module Smartguard
           super
 
           if Smartguard.environment == :development
-            Logging.logger.info "Skipping thin; Please run manually".black_on_white.bold
+            Logging.logger.info "Skipping web; Please run manually with `rack web`".black_on_white.bold
             return true
           else
-            Logging.logger.info "Starting thin"
+            Logging.logger.info "Starting web"
           end
 
-          log_path = @path.join('log/thin.log')
+          log_path = @path.join('log/web.log')
 
-          if !run(@path,
-                  {},
+          if !run(@path, {
+                  'RACK_ENV' => Smartguard.environment.to_s
+                },
                   "bundle", "exec",
-                  "thin", "-e", Smartguard.environment.to_s, "-p", "3000", "-l", "#{log_path}",
-                  "start"
+                  "rack", "web"
                  )
             return false
           end
 
           result = without_respawn do
-            wait_for_port 3000
+            wait_for_port 3001
           end
 
           result
@@ -33,7 +33,7 @@ module Smartguard
         def stop
           super
 
-          Logging.logger.info "Stoping thin"
+          Logging.logger.info "Stoping web"
           kill_and_wait :TERM, 15
         end
       end

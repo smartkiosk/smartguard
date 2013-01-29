@@ -17,7 +17,7 @@ require 'smartguard/applications/smartkiosk'
 require 'smartguard/applications/smartkiosk/sidekiq'
 require 'smartguard/applications/smartkiosk/smartware'
 require 'smartguard/applications/smartkiosk/scheduler'
-require 'smartguard/applications/smartkiosk/thin'
+require 'smartguard/applications/smartkiosk/web'
 
 module Smartguard
   class << self
