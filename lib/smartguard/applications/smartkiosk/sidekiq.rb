@@ -21,7 +21,7 @@ module Smartguard
           if !run(@path,
                   {},
                   "bundle", "exec",
-                  "sidekiq", "-e", Smartguard.environment.to_s, "--config=#{config_path}", "--pidfile=#{pidfile}", *opts
+                  "sidekiq", "-e", Smartguard.environment.to_s, "-r", "./config/boot.rb", "--config=#{config_path}", "--pidfile=#{pidfile}", *opts
                  )
             return false
           end
