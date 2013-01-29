@@ -1,7 +1,7 @@
 module Smartguard
   module Applications
     class Smartkiosk
-      class Thin < Process
+      class Web < Process
         def start
           super
 
