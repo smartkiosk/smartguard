@@ -22,6 +22,8 @@ Gem::Specification.new do |gem|
   gem.add_dependency 'activesupport'
   gem.add_dependency 'trollop'
   gem.add_dependency 'colored'
+  gem.add_dependency 'eventmachine'
+  gem.add_dependency 'amqp'
 
   gem.add_development_dependency 'pry'
 end

@@ -19,7 +19,8 @@ module Smartguard
           end
 
           without_respawn do
-            wait_for_port 6001
+          #  wait_for_port 6001
+            true
           end
         end
 

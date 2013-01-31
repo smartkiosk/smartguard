@@ -1,8 +1,10 @@
 require 'active_support/all'
 require 'pathname'
 require 'fileutils'
-require 'drb'
 require 'socket'
+require 'eventmachine'
+require 'amqp'
+require 'json'
 
 require 'smartkiosk/common'
 
