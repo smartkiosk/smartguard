@@ -32,7 +32,7 @@ def start_application(application, opts, &block)
 
           Smartguard.shutting_down = true
           Smartguard::Logging.logger.info "Stopping services"
-          application.stop
+          application.stop_services
         end
 
       rescue => e

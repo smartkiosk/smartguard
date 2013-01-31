@@ -40,7 +40,7 @@ module Smartguard
       data = JSON.load data
 
       operation = ->() do
-        post_event "command.#{data["id"]}.started"
+        post_event 'command.started', data["id"]
 
         begin
           dispatch_command *data["command"]
@@ -51,9 +51,9 @@ module Smartguard
 
       callback = ->(result) do
         if result.respond_to? :exception
-          post_event "command.#{data["id"]}.finished", nil, result.to_s
+          post_event 'command.finished', data["id"], nil, result.to_s
         else
-          post_event "command.#{data["id"]}.finished", result
+          post_event 'command.finished', data["id"], result
         end
       end
 
