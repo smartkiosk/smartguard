@@ -79,14 +79,14 @@ EventMachine.run do
   amqp_connection = AMQP.connect opts[:broker]
   amqp_channel    = AMQP::Channel.new amqp_connection
   guard_commands  = amqp_channel.fanout "smartguard.commands", auto_delete: true
-  guard_status    = amqp_channel.topic "smartguard.events", durable: true
+  guard_status    = amqp_channel.topic "smartguard.events", auto_delete: true
 
-  status_queue    = amqp_channel.queue 'smartguardctl.events', durable: true
+  status_queue    = amqp_channel.queue '', exclusive: true
 
   cmd, complete = CommandHandler.send(cmd)
   id = "ctl-#{Process.pid}"
 
-  status_queue.bind guard_status, routing_key: "command.#{id}.*", persistent: true
+  status_queue.bind guard_status, routing_key: "command.#{id}.*"
 
   timer = EventMachine.add_timer(1) do
     warn "Smartguard is not responding"
