@@ -1,67 +1,59 @@
 #!/usr/bin/env ruby
 
-require "bundler/setup"
-
 require "trollop"
-require "eventmachine"
-require "json"
-require "amqp"
+require "smartguard"
 
 module CommandHandler
-  def self.cmd_start
-    [ [ "start" ], nil ]
+  def self.cmd_start(drb)
+    status = drb.start_services
   end
 
-  def self.cmd_stop
-    [ [ "stop" ], nil ]
+  def self.cmd_stop(drb)
+    drb.stop_services
   end
 
-  def self.cmd_restart
-    [ [ "restart" ], nil ]
+  def self.cmd_restart(drb)
+    drb.restart
   end
 
-  def self.cmd_status
-    done = ->(status) do
-      status.each do |service, (pid, active)|
-        printf "%-16s: ", service
+  def self.cmd_status(drb)
+    status = drb.status
 
-        if active
-          puts "running, pid #{pid}"
-        else
-          puts "stopped"
-        end
+    status.each do |service, (pid, active)|
+      printf "%-16s: ", service
+
+      if active
+        puts "running, pid #{pid}"
+      else
+        puts "stopped"
       end
     end
-
-    [ [ "status" ], done ]
   end
 
-  def self.cmd_switch_release
+  def self.cmd_switch_release(drb)
     if ARGV.empty?
       warn "release must be specified"
       exit 1
     end
 
     release = ARGV.shift
-
-    done = ->(success) do
-      if success
-        puts "releases switched"
-      else
-        warn "switch failed"
-        exit 1
-      end
+    status = drb.switch_release release
+    if status
+      puts "releases switched"
+    else
+      warn "switch failed"
+      exit 1
     end
-
-    [ [ "switch_release", release ], done ]
   end
 end
 
 opts = Trollop.options do
-  version "Smartguard CLI"
-  opt :broker, "AMQP broker", default: "amqp://guest:guest@127.0.0.1:5672"
+  version "Smartguard CLI #{Smartguard::VERSION}"
+  opt :port, "DRB Port", default: 10000
   stop_on_unknown
 end
+
+drb = DRb::DRbObject.new_with_uri "druby://localhost:#{opts[:port]}"
 
 if ARGV.empty?
   warn "command must be specified"
@@ -75,51 +67,4 @@ unless CommandHandler.respond_to? cmd
   exit 1
 end
 
-EventMachine.run do
-  amqp_connection = AMQP.connect opts[:broker]
-  amqp_channel    = AMQP::Channel.new amqp_connection
-  guard_commands  = amqp_channel.fanout "smartguard.commands", auto_delete: true
-  guard_status    = amqp_channel.topic "smartguard.events", auto_delete: true
-
-  status_queue    = amqp_channel.queue '', exclusive: true
-  status_queue.bind guard_status, routing_key: 'command.*'
-
-  cmd, complete = CommandHandler.send(cmd)
-  id = Process.pid
-
-  timer = EventMachine.add_timer(1) do
-    warn "Smartguard is not responding"
-
-    exit 1
-  end
-
-  status_queue.subscribe do |header, message|
-    body = JSON.load(message)
-
-    case header.routing_key
-    when "command.started"
-      id, = body
-      if id == id
-        warn "Executing command"
-        EventMachine.cancel_timer timer
-      end
-
-    when "command.finished"
-      id, result, error = body
-      if id == id
-        if !error.nil?
-          warn "Command failed: #{error}"
-        elsif !complete.nil?
-          complete.call result
-        end
-
-        exit 0
-      end
-    end
-  end
-
-  guard_commands.publish JSON.dump({
-    id: id,
-    command: cmd
-  })
-end
+CommandHandler.send cmd, drb

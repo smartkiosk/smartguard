@@ -1,5 +1,7 @@
 module Smartguard
   class Process
+    include DRb::DRbUndumped
+
     attr_reader :pid
     attr_accessor :path
 

@@ -1,87 +1,85 @@
 #!/usr/bin/env ruby
 
-require "bundler/setup"
-
 require 'smartguard'
 require 'trollop'
 require 'colored'
 
 def start_application(application, opts, &block)
 
-  EventMachine.run do
-    Smartguard::Logging.logger.info "Starting application"
+  Smartguard::Logging.logger.info "Starting application"
 
-    unless opts[:pid].nil?
-      begin
-        File.open(opts[:pid], "w") do |io|
-          io.write Process.pid.to_s
-        end
-      rescue => e
-        Smartguard::Logging.logger.error "Unable to write pidfile: #{e}"
+  unless opts[:pid].nil?
+    begin
+      File.open(opts[:pid], "w") do |io|
+        io.write Process.pid.to_s
       end
-    end
-
-    application = application.new opts[:path], opts[:broker]
-
-    signal_handler = ->(signal) do
-      begin
-        if Smartguard.shutting_down
-          Smartguard::Logging.logger.info "Okay, okay."
-        else
-          Smartguard::Logging.logger.info "Catched signal #{signal}, shutting down"
-
-          Smartguard.shutting_down = true
-          Smartguard::Logging.logger.info "Stopping services"
-          application.stop_services
-        end
-
-      rescue => e
-        Smartguard::Logging.logger.error "Shutdown failed: #{e}"
-
-      ensure
-        exit 1
-      end
-    end
-
-    trap :HUP, signal_handler
-    trap :INT, signal_handler
-    trap :QUIT, signal_handler
-    trap :PIPE, "IGNORE"
-    trap :TERM, signal_handler
-    Smartguard::ProcessManager.init
-
-    at_exit do
-      begin
-        Smartguard::Logging.logger.info "Killing any remaining processes"
-      ensure
-        Process.kill :KILL, 0
-      end
-    end
-
-    EventMachine.defer do
-      Smartguard::Logging.logger.info "Starting services"
-
-      begin
-        application.start do
-          Smartguard::Logging.logger.error "Startup failed, cleaning up and exiting"
-          application.stop
-          exit 1
-        end
-      rescue => e
-        Smartguard::Logging.logger.error "Exception catched during service startup: #{e}"
-        e.backtrace.each do |line|
-          Smartguard::Logging.logger.error line
-        end
-
-        exit 1
-      end
-
-      Smartguard::Logging.logger.info "Services started"
-      Smartguard::Logging.logger.info "Smartguard ready"
-
-      yield if block_given?
+    rescue => e
+      Smartguard::Logging.logger.error "Unable to write pidfile: #{e}"
     end
   end
+
+  application = application.new opts[:path]
+
+  signal_handler = ->(signal) do
+    begin
+      if Smartguard.shutting_down
+        Smartguard::Logging.logger.info "Okay, okay."
+      else
+        Smartguard::Logging.logger.info "Catched signal #{signal}, shutting down"
+
+        Smartguard.shutting_down = true
+        Smartguard::Logging.logger.info "Stopping services"
+        application.stop_services
+      end
+
+    rescue => e
+      Smartguard::Logging.logger.error "Shutdown failed: #{e}"
+
+    ensure
+      exit 1
+    end
+  end
+
+  trap :HUP, signal_handler
+  trap :INT, signal_handler
+  trap :QUIT, signal_handler
+  trap :PIPE, "IGNORE"
+  trap :TERM, signal_handler
+  Smartguard::ProcessManager.init
+
+  at_exit do
+    begin
+      Smartguard::Logging.logger.info "Killing any remaining processes"
+    ensure
+      Process.kill :KILL, 0
+    end
+  end
+
+  Smartguard::Logging.logger.info "Starting services"
+
+  begin
+    application.start_services do
+      Smartguard::Logging.logger.error "Startup failed, cleaning up and exiting"
+      application.stop_services
+      exit 1
+    end
+  rescue => e
+    Smartguard::Logging.logger.error "Exception catched during service startup: #{e}"
+    e.backtrace.each do |line|
+      Smartguard::Logging.logger.error line
+    end
+
+    exit 1
+  end
+
+  Smartguard::Logging.logger.info "Services started"
+
+  DRb.start_service("druby://localhost:#{opts[:port]}", application)
+  Smartguard::Logging.logger.info "Smartguard ready"
+
+  yield if block_given?
+
+  DRb.thread.join
 end
 
 trap :TTIN do
@@ -100,7 +98,7 @@ opts = Trollop.options do
 
   opt :app, "Application to use", type: String
   opt :path, "Path to application", type: String
-  opt :broker, "AMQP broker", default: "amqp://guest:guest@127.0.0.1:5672"
+  opt :port, "Port to run DRB", default: 10000
   opt :pid, "Pid file name", type: String
   opt :log, "Log file name", type: String
   opt :development, "Run in the development environment"

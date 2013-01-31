@@ -1,12 +1,6 @@
 module Smartguard
   module Applications
     class Smartkiosk < Smartguard::Application
-      COMMANDS = [
-        :services, :status,
-        :start, :stop, :restart,
-        :switch_release, :reboot,
-      ]
-
       def initialize(*args)
         super
 
@@ -24,13 +18,6 @@ module Smartguard
         }
       end
 
-      def dispatch_command(command, *args)
-        command = command.to_sym
-        raise "unsupported command #{command}" unless COMMANDS.include? command
-
-        send command, *args
-      end
-
       def services
         @services.keys
       end
@@ -45,13 +32,23 @@ module Smartguard
         data
       end
 
-      def restart(path = nil)
-        stop(path)
-        start(path)
+      def restart(path=nil)
+        stop_services(path)
+        start_services(path)
+      end
+
+      def restart_async(path=nil)
+        Thread.new{ self.restart(path) }
+        true
       end
 
       def reboot
         system 'reboot'
+      end
+
+      def reboot_async
+        Thread.new{ self.reboot }
+        true
       end
 
       def switch_release(release)
@@ -93,25 +90,30 @@ module Smartguard
           Logging.logger.warn "Switch handler failed: #{e}"
         end
 
-        self.stop
+        self.stop_services
 
         Logging.logger.info "Switching symlink from `#{@active_path}` to `#{release}`"
         File.delete @current_path if File.symlink? @current_path
         FileUtils.ln_s(release, @current_path)
 
-        @active_path = release if self.start do
+        @active_path = release if self.start_services do
           Logging.logger.warn "New release `#{release}` did not start!"
-          self.stop
+          self.stop_services
 
           Logging.logger.info "Switching symlink back to `#{@active_path}`"
           File.delete @current_path
           FileUtils.ln_s @active_path, @current_path
 
-          self.start
+          self.start_services
         end
       end
 
-      def start(path=nil, &block)
+      def switch_release_async(release)
+        Thread.new{ switch_release(release) }
+        true
+      end
+
+      def start_services(path=nil, &block)
         @services.each do |key, service|
           service.path = wrap_path path
 
@@ -125,7 +127,7 @@ module Smartguard
         end
       end
 
-      def stop(path=nil)
+      def stop_services(path=nil)
         @services.each do |key, service|
           service.path = wrap_path path
 
