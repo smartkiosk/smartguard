@@ -84,8 +84,9 @@ EventMachine.run do
   status_queue    = amqp_channel.queue 'smartguardctl.events', durable: true
 
   cmd, complete = CommandHandler.send(cmd)
+  id = "ctl-#{Process.pid}"
 
-  status_queue.bind guard_status, routing_key: "command.ctl.#", persistent: true
+  status_queue.bind guard_status, routing_key: "command.#{id}.*", persistent: true
 
   timer = EventMachine.add_timer(1) do
     warn "Smartguard is not responding"
@@ -96,9 +97,9 @@ EventMachine.run do
   status_queue.subscribe do |header, message|
     body = JSON.load(message)
 
-    parts = header.routing_key.split(".")
-    if parts[2].to_i == Process.pid
-      case parts[3]
+    prefix, msg_id, event = header.routing_key.split(".")
+    if msg_id == id
+      case event
       when "started"
         warn "Executing command"
         EventMachine.cancel_timer timer
@@ -117,7 +118,7 @@ EventMachine.run do
   end
 
   guard_commands.publish JSON.dump({
-    id: "ctl.#{Process.pid}",
+    id: id,
     command: cmd
   })
 end
