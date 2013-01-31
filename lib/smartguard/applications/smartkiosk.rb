@@ -51,7 +51,7 @@ module Smartguard
       end
 
       def reboot
-        system 'reboot'
+        Process.spawn 'reboot'
       end
 
       def switch_release(release)

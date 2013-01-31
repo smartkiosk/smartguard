@@ -21,7 +21,7 @@ module Smartguard
       @amqp_connection = AMQP.connect broker
       @amqp_channel    = AMQP::Channel.new @amqp_connection
       @guard_commands  = @amqp_channel.fanout "smartguard.commands", auto_delete: true
-      @guard_status    = @amqp_channel.topic "smartguard.events", auto_delete: true
+      @guard_status    = @amqp_channel.topic "smartguard.events", durable: true
 
       command_queue = @amqp_channel.queue '', exclusive: true
       command_queue.bind @guard_commands
