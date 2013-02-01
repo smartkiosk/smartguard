@@ -43,7 +43,8 @@ module Smartguard
       end
 
       def reboot
-        system 'reboot'
+        stop_services
+        Process.spawn 'reboot'
       end
 
       def reboot_async
@@ -62,6 +63,7 @@ module Smartguard
         raise "Release doesn't exist: #{release.to_s}" unless File.exist? release
 
         FileUtils.mkdir_p "#{release}/tmp/pids"
+        FileUtils.mkdir_p "#{release}/log"
 
         FileUtils.cd(release) do
           Logging.logger.info "Symlinking"
@@ -84,12 +86,6 @@ module Smartguard
           end
         end
 
-        begin
-         yield if block_given?
-        rescue Exception => e
-          Logging.logger.warn "Switch handler failed: #{e}"
-        end
-
         self.stop_services
 
         Logging.logger.info "Switching symlink from `#{@active_path}` to `#{release}`"
@@ -105,6 +101,8 @@ module Smartguard
           FileUtils.ln_s @active_path, @current_path
 
           self.start_services
+
+          raise "startup failed"
         end
       end
 
