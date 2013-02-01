@@ -6,11 +6,11 @@ require 'smartguard/version'
 Gem::Specification.new do |gem|
   gem.name          = "smartguard"
   gem.version       = Smartguard::VERSION
-  gem.authors       = ["Boris Staal"]
-  gem.email         = ["boris@roundlake.ru"]
+  gem.authors       = ["Boris Staal", 'Sergey Gridasov']
+  gem.email         = ["boris@roundlake.ru", 'grindars@gmail.com']
   gem.description   = %q{Smartguard is the Smartkiosk services control daemon}
   gem.summary       = gem.description
-  gem.homepage      = "https://github.com/roundlake/smartguard"
+  gem.homepage      = "https://github.com/smartkiosk/smartguard"
 
   gem.files         = `git ls-files`.split($/)
   gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
