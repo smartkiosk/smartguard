@@ -23,7 +23,7 @@ module Smartguard
                   'RACK_ENV' => Smartguard.environment.to_s
                 },
                   "bundle", "exec",
-                  "smartkiosk-client", "web", *opts
+                  "smartkiosk-client", *opts
                  )
             return false
           end

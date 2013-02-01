@@ -5,6 +5,8 @@ module Smartguard
         def start
           super
 
+          Logging.logger.info "Starting smartware"
+
           log_file    = @path.join('log/smartware.log')
           config_file = @path.join('config/services/smartware.yml')
 
@@ -13,7 +15,6 @@ module Smartguard
             opts << "--log=#{log_file}"
           end
 
-          Logging.logger.info "Starting smartware"
           if !run(@path, {}, "bundle", "exec", "smartware", "--config=#{config_file}", *opts)
             return false
           end
