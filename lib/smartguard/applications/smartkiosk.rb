@@ -44,7 +44,7 @@ module Smartguard
 
       def reboot
         stop_services
-        Process.spawn 'reboot'
+        ::Process.spawn 'reboot'
       end
 
       def reboot_async
