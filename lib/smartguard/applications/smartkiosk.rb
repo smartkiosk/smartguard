@@ -76,7 +76,7 @@ module Smartguard
           FileUtils.ln_s "services/database.yml", "config/database.yml"
 
           Logging.logger.info "Installing release gems"
-          if !system("bundle", "install", "--local")
+          if !system("bundle", "install")
             raise "bundle failed"
           end
 
